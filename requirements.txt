@@ -1,0 +1,4 @@
+openai==1.97.0
+python-dotenv==1.1.1
+azure-functions==1.23.0
+azure-keyvault-secrets==4.10.0
