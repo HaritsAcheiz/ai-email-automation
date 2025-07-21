@@ -70,5 +70,4 @@ jobs:
           app-name: 'functions-ai-email-automation'
           slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          # publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_29C8143B6C544E30B6BF020D3B0FB88D }}
           publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
