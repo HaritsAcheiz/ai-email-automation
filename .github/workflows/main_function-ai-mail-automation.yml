@@ -11,7 +11,9 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
+  # Set this to the path to your web app project, defaults to the repository root
+  # This will now point to the generated zip file directly.
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'release.zip'
   PYTHON_VERSION: '3.12' # set this to the python version to use (supports 3.6, 3.7, 3.8)
 
 jobs:
@@ -29,45 +31,53 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Create and start virtual environment
+      # We no longer need to create a virtual environment or install dependencies here
+      # because Azure's Oryx build will handle it during deployment from requirements.txt.
+      # This makes the build artifact smaller and cleaner.
+
+      # Optional: Add step to run tests here (before zipping)
+
+      - name: Zip artifact for deployment # <-- MODIFIED ZIP COMMAND
         run: |
-          python -m venv venv
-          source venv/bin/activate
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      # Optional: Add step to run tests here
-
-      - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
+          # Create a clean zip file containing only necessary files for deployment.
+          # Azure Functions will install dependencies from requirements.txt on the server.
+          zip -r release.zip . \
+            -x "*.git*" \
+            -x "*.github*" \
+            -x "local.settings.json" \
+            -x "*.vscode*" \
+            -x "__pycache__*" \
+            -x "*.pytest_cache*" \
+            -x "*.egg-info*" \
+            -x "*.DS_Store" \
+            -x "venv/*" # Explicitly exclude venv if it somehow gets created before this step
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: |
-            release.zip
-            !venv/
+          path: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }} # Upload the single zip file
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    
+
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: python-app
 
-      - name: Unzip artifact for deployment
-        run: unzip release.zip     
-        
+      # REMOVE THE UNZIP STEP. The Azure/functions-action expects a zip file.
+      # - name: Unzip artifact for deployment
+      #   run: unzip release.zip
+
       - name: 'Deploy to Azure Functions'
         uses: Azure/functions-action@v1
         id: deploy-to-function
         with:
           app-name: 'function-ai-mail-automation'
           slot-name: 'Production'
+          # Pass the path to the zip file directly. The action will handle extraction.
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_33B2A5E69E8A4A0CB3FC120896A96B44 }}
