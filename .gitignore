@@ -211,3 +211,5 @@ pyproject.toml
 uv.lock
 local.settings.json
 host.json
+functions-ai-email-automation.PublishSettings
+notes.txt
