@@ -104,3 +104,4 @@ def GenerateEmailReply(req: func.HttpRequest) -> func.HttpResponse:
 			f"An error occurred while generating the reply: {e}",
 			status_code=500
 		)
+
